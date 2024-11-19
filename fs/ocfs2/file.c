@@ -1787,6 +1787,14 @@ int ocfs2_remove_inode_range(struct inode *inode,
 		return 0;
 
 	if (OCFS2_I(inode)->ip_dyn_features & OCFS2_INLINE_DATA_FL) {
+		int id_count = ocfs2_max_inline_data_with_xattr(inode->i_sb, di);
+
+		if (byte_start > id_count || byte_start + byte_len > id_count) {
+			ret = -EINVAL;
+			mlog_errno(ret);
+			goto out;
+		}
+
 		ret = ocfs2_truncate_inline(inode, di_bh, byte_start,
 					    byte_start + byte_len, 0);
 		if (ret) {
@@ -2804,6 +2812,7 @@ const struct file_operations ocfs2_fops = {
 	.splice_write	= iter_file_splice_write,
 	.fallocate	= ocfs2_fallocate,
 	.remap_file_range = ocfs2_remap_file_range,
+	.fop_flags	= FOP_ASYNC_LOCK,
 };
 
 WRAP_DIR_ITER(ocfs2_readdir) // FIXME!
@@ -2820,6 +2829,7 @@ const struct file_operations ocfs2_dops = {
 #endif
 	.lock		= ocfs2_lock,
 	.flock		= ocfs2_flock,
+	.fop_flags	= FOP_ASYNC_LOCK,
 };
 
 /*
